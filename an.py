@@ -12,66 +12,90 @@ class CircularAnimation:
         self.radius = 300
         self.angle = 0
         self.speed = 0.05
+        self.num_circles = 1  # Initial number of circles
         self.mode = 1  # Start with mode 1
-        self.theme = "dark"  # Start with dark theme
 
+        self.circles = []
+        self.lines = []
         self.create_elements()
+        self.update_circles()
         self.create_text_instructions()
 
-        self.master.bind("<Up>", self.increase_speed)
-        self.master.bind("<Down>", self.decrease_speed)
-        self.master.bind("<Left>", self.switch_theme)
-        self.master.bind("<Right>", self.switch_mode)
+        self.master.bind("<Up>", self.increase_circles)
+        self.master.bind("<Down>", self.decrease_circles)
+        self.master.bind("<Right>", self.increase_speed)
+        self.master.bind("<Left>", self.decrease_speed)
+        self.master.bind("<Return>", self.toggle_lines)  # Enter key to toggle lines
         self.master.bind("<Escape>", self.exit_program)
 
         self.animate()
 
     def create_elements(self):
-        # Center dot
+        # Create center dot
         self.center_dot = self.canvas.create_oval(self.center_x-5, self.center_y-5, 
                                                   self.center_x+5, self.center_y+5, 
                                                   fill="white", outline="white")
 
-        self.moving_dot = self.canvas.create_oval(0, 0, 10, 10, fill="white", outline="white")
-        self.rotating_line = self.canvas.create_line(self.center_x, self.center_y, 
-                                                     self.center_x + self.radius, self.center_y, 
-                                                     fill="white")
+    def update_circles(self):
+        # Clear existing circles and lines
+        for circle in self.circles:
+            self.canvas.delete(circle)
+        for line in self.lines:
+            self.canvas.delete(line)
+        self.circles.clear()
+        self.lines.clear()
+
+        # Create new circles
+        for i in range(self.num_circles):
+            circle = self.canvas.create_oval(0, 0, 10, 10, fill="white", outline="white")
+            self.circles.append(circle)
 
     def create_text_instructions(self):
-        self.speed_text = self.canvas.create_text(960, 50, text=f"Speed: {self.speed:.2f}", 
-                                                  fill="white", anchor="center", font=("Arial", 20))
+        # Create text instructions
+        self.speed_text = self.canvas.create_text(20, 20, text=f"Speed: {self.speed:.2f}", 
+                                                  fill="white", anchor="nw", font=("Arial", 14))
         
-        self.speed_instruction = self.canvas.create_text(960, 100, 
-                                                         text="Use UP and DOWN arrow keys to change speed", 
-                                                         fill="white", anchor="center", font=("Arial", 16))
+        self.speed_instruction = self.canvas.create_text(20, 50, 
+                                                         text="UP/DOWN: Change number of circles",
+                                                        fill="white", anchor="nw", font=("Arial", 12))
 
-        self.mode_instruction = self.canvas.create_text(960, 980, 
-                                                        text="Press RIGHT arrow key to switch mode", 
-                                                        fill="white", anchor="center", font=("Arial", 24))
+        self.speed_instruction = self.canvas.create_text(20, 80, 
+                                                         text="RIGHT/LEFT: Change speed", 
+                                                         fill="white", anchor="nw", font=("Arial", 12))
 
-        self.theme_instruction = self.canvas.create_text(960, 1020, 
-                                                         text="Press LEFT arrow key to switch color theme", 
-                                                         fill="white", anchor="center", font=("Arial", 24))
-
-        self.exit_instruction = self.canvas.create_text(960, 1060, 
-                                                        text="Press ESC to exit", 
-                                                        fill="white", anchor="center", font=("Arial", 24))
+        self.exit_instruction = self.canvas.create_text(20, 110, 
+                                                        text="ESC: Exit", 
+                                                        fill="white", anchor="nw", font=("Arial", 12))
 
     def animate(self):
         self.angle += self.speed
-        x = self.center_x + self.radius * math.cos(self.angle)
-        y = self.center_y + self.radius * math.sin(self.angle)
+        for i, circle in enumerate(self.circles):
+            angle_offset = (2 * math.pi / self.num_circles) * i
+            x = self.center_x + self.radius * math.cos(self.angle + angle_offset)
+            y = self.center_y + self.radius * math.sin(self.angle + angle_offset)
+            self.canvas.coords(circle, x-5, y-5, x+5, y+5)
 
-        if self.mode == 1:
-            self.canvas.coords(self.moving_dot, x-5, y-5, x+5, y+5)
-            self.canvas.itemconfig(self.moving_dot, state="normal")
-            self.canvas.itemconfig(self.rotating_line, state="hidden")
-        else:
-            self.canvas.coords(self.rotating_line, self.center_x, self.center_y, x, y)
-            self.canvas.itemconfig(self.moving_dot, state="hidden")
-            self.canvas.itemconfig(self.rotating_line, state="normal")
+        # Draw lines if mode is 2
+        if self.mode == 2:
+            for i in range(self.num_circles):
+                x1 = self.center_x + self.radius * math.cos(self.angle + (2 * math.pi / self.num_circles) * i)
+                y1 = self.center_y + self.radius * math.sin(self.angle + (2 * math.pi / self.num_circles) * i)
+                for j in range(i + 1, self.num_circles):
+                    x2 = self.center_x + self.radius * math.cos(self.angle + (2 * math.pi / self.num_circles) * j)
+                    y2 = self.center_y + self.radius * math.sin(self.angle + (2 * math.pi / self.num_circles) * j)
+                    line = self.canvas.create_line(x1, y1, x2, y2, fill="white")
+                    self.lines.append(line)
 
         self.master.after(16, self.animate)  # ~60 FPS
+
+    def increase_circles(self, event):
+        self.num_circles += 1
+        self.update_circles()
+
+    def decrease_circles(self, event):
+        if self.num_circles > 1:
+            self.num_circles -= 1
+            self.update_circles()
 
     def increase_speed(self, event):
         self.speed += 0.01
@@ -83,30 +107,6 @@ class CircularAnimation:
 
     def update_speed_display(self):
         self.canvas.itemconfig(self.speed_text, text=f"Speed: {self.speed:.2f}")
-
-    def switch_mode(self, event):
-        self.mode = 3 - self.mode  # Switch between 1 and 2
-
-    def switch_theme(self, event):
-        if self.theme == "dark":
-            self.theme = "light"
-            bg_color, fg_color = "white", "black"
-        else:
-            self.theme = "dark"
-            bg_color, fg_color = "black", "white"
-        
-        self.canvas.config(bg=bg_color)
-        
-        # Update shapes
-        for item in [self.center_dot, self.moving_dot]:
-            self.canvas.itemconfig(item, fill=fg_color, outline=fg_color)
-        self.canvas.itemconfig(self.rotating_line, fill=fg_color)
-        
-        # Update text
-        for item in [self.speed_text, self.speed_instruction, 
-                     self.mode_instruction, self.theme_instruction, 
-                     self.exit_instruction]:
-            self.canvas.itemconfig(item, fill=fg_color)
 
     def exit_program(self, event):
         self.master.destroy()
