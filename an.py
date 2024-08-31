@@ -13,10 +13,8 @@ class CircularAnimation:
         self.angle = 0
         self.speed = 0.05
         self.num_circles = 1  # Initial number of circles
-        self.mode = 1  # Start with mode 1
 
         self.circles = []
-        self.lines = []
         self.create_elements()
         self.update_circles()
         self.create_text_instructions()
@@ -25,7 +23,6 @@ class CircularAnimation:
         self.master.bind("<Down>", self.decrease_circles)
         self.master.bind("<Right>", self.increase_speed)
         self.master.bind("<Left>", self.decrease_speed)
-        self.master.bind("<Return>", self.toggle_lines)  # Enter key to toggle lines
         self.master.bind("<Escape>", self.exit_program)
 
         self.animate()
